@@ -44,14 +44,24 @@ $handoff Continue the remaining implementation in a new conversation, preserving
 
 In Claude Code, use `/handoff` with the same task description. In OpenCode and DSH, ask the agent to load the `handoff` skill and continue the task in a fresh session; available UI shortcuts depend on the host.
 
+For prompt-only mode:
+
+```text
+$handoff --prompt-only Continue the remaining implementation with the existing acceptance criteria.
+```
+
+Use `/handoff --prompt-only ...` in Claude Code, or explicitly request the same mode when loading the skill in OpenCode or DSH. This mode prepares the handoff and a ready-to-send prompt, stops task execution, and ends the current turn without starting a successor or closing the conversation. Omit the flag to create a continuation by default.
+
+The skill requires an explicit user request. Claude Code's `disable-model-invocation` and Codex's `allow_implicit_invocation: false` provide host-level invocation controls; other hosts follow the same instruction where equivalent controls are unavailable.
+
 The request authorizes the continuation within the existing task scope. Pending approvals, read-only constraints, and other authorization boundaries carry forward.
 
 ## Handoff workflow
 
 1. **Reach a recoverable checkpoint.** Inspect active tools, background processes, and delegated work. Finish the smallest bounded step needed for a clear task state; do not wait for the entire project to finish. Reconcile uncertain external results before retrying an operation.
 2. **Prepare the handoff.** Write a concise document in a private temporary location outside the workspace. Record the objective, decisions, artifact state, verification evidence, open questions, and next action. Reference existing artifacts and redact secrets and unnecessary personal data.
-3. **Start the continuation.** Freeze source-side writes before creating the new conversation. The successor reads the handoff, verifies the current state, and continues within the inherited scope. The source observes the transfer without continuing to modify shared artifacts.
-4. **Verify the transfer.** Distinguish conversation creation from an observed start. Reuse the existing continuation when setup is pending or a result is ambiguous; do not create duplicates on timeout.
+3. **Start the continuation (default mode).** Freeze source-side writes before creating the new conversation. The successor reads the handoff, verifies the current state, and continues within the inherited scope. The source observes the transfer without continuing to modify shared artifacts.
+4. **Verify the transfer (default mode).** Distinguish conversation creation from an observed start. Reuse the existing continuation when setup is pending or a result is ambiguous; do not create duplicates on timeout.
 
 A checkpoint may include documented uncommitted changes. The skill does not commit or push code solely to prepare a handoff. If a safe checkpoint cannot be reached, it reports the blocker and leaves the transfer pending.
 

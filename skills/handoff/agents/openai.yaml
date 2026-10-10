@@ -2,3 +2,6 @@ interface:
   display_name: "Handoff"
   short_description: "Reach a safe checkpoint and start a fresh conversation"
   default_prompt: "Use $handoff to reach a recoverable checkpoint and create a new conversation to continue the current work."
+
+policy:
+  allow_implicit_invocation: false

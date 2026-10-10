@@ -1,11 +1,21 @@
 ---
 name: handoff
+disable-model-invocation: true
+argument-hint: "[--prompt-only] [next-session focus]"
 description: Transfer ongoing work to a fresh session in Codex, Claude Code, OpenCode, or DeepSeek Harness (DSH) when the user requests a handoff. Reach a recoverable checkpoint, write a concise handoff, and launch the continuation through the host's supported session interface.
 ---
 
 # Handoff
 
 Carry the user's existing objective into a fresh conversation. A request to use this skill authorizes creating that continuation; it does not expand the work's permissions or authorize unrelated actions. Arguments describe the next session's focus. Preserve any explicit stop, cancellation, read-only, or approval boundary.
+
+## Invocation and mode
+
+Run only when the user explicitly invokes this skill or requests a handoff. Do not select it autonomously because a conversation is long or context is running low. Hosts that support invocation metadata must enforce `disable-model-invocation: true`; Codex uses `agents/openai.yaml` with `allow_implicit_invocation: false`. On other hosts, retain this explicit-user-request rule without claiming a native enforcement mechanism.
+
+Default mode creates a continuation. If the user supplies `--prompt-only` as a mode argument (or explicitly asks for a prompt without launching), reach the same recoverable checkpoint and write the same handoff, then return a self-contained, ready-to-send continuation prompt. Remove the mode flag from the next-session focus. Include the objective, handoff location, first next action, and inherited limits in that prompt. Verify that the intended destination can access the document; if it cannot, provide the necessary redacted context inline or identify the access blocker.
+
+In prompt-only mode, freeze task writes after preparing the materials, do not call any session creation or launch interface, and end the current turn. Report that no successor has started and execution is stopped pending the user's next instruction. Do not claim execution ownership has transferred, archive/close the conversation, or terminate unrelated processes. The checkpoint and existing stop instructions still apply.
 
 ## Reach a handoff point
 
@@ -33,7 +43,7 @@ Reference existing specs, plans, decisions, issues, commits, and diffs instead o
 
 ## Launch and transfer ownership
 
-Select the actual host, not merely an installed executable. Read only its reference before dispatch:
+In default mode only, select the actual host, not merely an installed executable. Read only its reference before dispatch:
 
 | Host | Session interface |
 | --- | --- |
