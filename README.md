@@ -1,37 +1,66 @@
 # Agent Skills
 
-可按需安装的 Agent 技能。目前包含 `handoff`：先把任务推进到可恢复的交接节点，再生成交接文档，主动创建新会话继续执行。
+**English** · [简体中文](README.zh-CN.md)
 
-## 统一安装
+Reusable skills for coding agents, with a focus on reliable task continuity. Each skill can be installed independently. The current collection targets Codex, with native conversation support for Codex desktop.
 
-使用 [skills CLI](https://github.com/vercel-labs/skills)，全局安装到 Codex：
+## Available skills
+
+| Skill | Purpose |
+| --- | --- |
+| [handoff](skills/handoff/SKILL.md) | Bring ongoing work to a recoverable checkpoint, prepare a handoff document, and start a new conversation to continue the task. |
+
+## Installation
+
+Install `handoff` globally for Codex with the [skills CLI](https://github.com/vercel-labs/skills):
 
 ```sh
 npx skills@latest add LAwLi3tCoding/agent-skills --skill handoff --agent codex --global --yes
 ```
 
-其他兼容 Agent 可使用同一个仓库入口，交互选择技能和目标 Agent：
+The skill is available in the next conversation turn after installation.
+
+To select skills and a supported agent interactively:
 
 ```sh
 npx skills@latest add LAwLi3tCoding/agent-skills
 ```
 
-本仓库面向 Codex，未提供其他 Agent 的专用配置。自动创建新会话需要宿主提供会话工具；仅支持读取技能的环境会输出交接文档和续接提示词，并明确说明尚未启动。
+For installations managed by the skills CLI, update `handoff` with:
 
-## 使用
-
-```text
-$handoff 下一轮继续完成剩余实现，保留当前验收要求。
+```sh
+npx skills@latest update handoff --global --yes
 ```
 
-技能会检查正在执行的工具、后台进程和协作任务。只完成到可交接节点所必需的最小步骤，不要求完成整个任务，不为交接自动提交或推送。创建新会话前，原会话先停止写入；启动后由新会话接管执行，原会话仅观察接管结果，避免重复操作。
+## Usage
 
-交接文档保存在系统临时目录，不进入代码仓库。它记录任务目标、已有授权、代码与产物状态、检查证据、不确定结果和下一步。已有计划等材料只引用路径或链接，敏感内容会被隐藏。
+Request a handoff and describe what the next conversation should focus on:
 
-创建新会话成功不等于任务完成。技能会分别报告交接节点、创建结果，以及是否观察到新会话开始执行；无法确定的外部操作优先核对结果，不盲目重试。
+```text
+$handoff Continue the remaining implementation in a new conversation, preserving the existing acceptance criteria.
+```
 
-安装后在下一轮对话中使用。更新已安装技能可运行 `npx skills@latest update`。
+The request authorizes the continuation within the existing task scope. Pending approvals, read-only constraints, and other authorization boundaries carry forward.
 
-## 来源与许可
+## Handoff workflow
 
-基于 [Matt Pocock 的 handoff](https://github.com/mattpocock/skills/blob/main/skills/productivity/handoff/SKILL.md) 改写，增加交接节点判断和新会话续接流程。保留上游 MIT 许可，见 [LICENSE](LICENSE)。
+1. **Reach a recoverable checkpoint.** Inspect active tools, background processes, and delegated work. Finish the smallest bounded step needed for a clear task state; do not wait for the entire project to finish. Reconcile uncertain external results before retrying an operation.
+2. **Prepare the handoff.** Write a concise document in a private temporary location outside the workspace. Record the objective, decisions, artifact state, verification evidence, open questions, and next action. Reference existing artifacts and redact secrets and unnecessary personal data.
+3. **Start the continuation.** Freeze source-side writes before creating the new conversation. The successor reads the handoff, verifies the current state, and continues within the inherited scope. The source observes the transfer without continuing to modify shared artifacts.
+4. **Verify the transfer.** Distinguish conversation creation from an observed start. Reuse the existing continuation when setup is pending or a result is ambiguous; do not create duplicates on timeout.
+
+A checkpoint may include documented uncommitted changes. The skill does not commit or push code solely to prepare a handoff. If a safe checkpoint cannot be reached, it reports the blocker and leaves the transfer pending.
+
+## Runtime requirements
+
+Automatic continuation requires native tools for creating and inspecting conversations, plus successor access to the handoff and workspace. The [Codex desktop reference](skills/handoff/references/codex.md) describes the supported tool flow.
+
+In an environment without conversation-creation tools, the skill produces the handoff document and a ready-to-send continuation prompt. It explicitly reports that automatic continuation has not started. Installation in another agent does not imply native conversation support; this repository does not include dedicated adapters for other agents.
+
+The handoff document stays outside the repository. The skill reports the checkpoint, destination conversation, and observed start or blocker. A successful transfer does not establish that the underlying task is complete.
+
+## Attribution and license
+
+`handoff` is adapted from [Matt Pocock's handoff skill](https://github.com/mattpocock/skills/blob/main/skills/productivity/handoff/SKILL.md), extending it with checkpoint selection and active conversation continuation.
+
+Distributed under the [MIT License](LICENSE), with the upstream copyright notice retained.
