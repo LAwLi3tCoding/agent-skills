@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: Transfer ongoing work to a new conversation when the user requests a handoff or continuation in a fresh session. Reach a recoverable checkpoint, write a concise handoff, and launch the continuation when session tools are available.
+description: Transfer ongoing work to a fresh session in Codex, Claude Code, OpenCode, or DeepSeek Harness (DSH) when the user requests a handoff. Reach a recoverable checkpoint, write a concise handoff, and launch the continuation through the host's supported session interface.
 ---
 
 # Handoff
@@ -33,14 +33,25 @@ Reference existing specs, plans, decisions, issues, commits, and diffs instead o
 
 ## Launch and transfer ownership
 
-Use the host's native conversation-creation tools. Do not use a subagent as a substitute for the user's new conversation. For Codex desktop, read [references/codex.md](references/codex.md) before dispatch.
+Select the actual host, not merely an installed executable. Read only its reference before dispatch:
 
-Choose the existing project and execution environment where the artifacts are accessible. Keep the configured model and effort by default; set overrides only when the user explicitly requested them and the destination supports them. Do not invent branch names or create a worktree unless requested.
+| Host | Session interface |
+| --- | --- |
+| Codex | [references/codex.md](references/codex.md) — desktop conversation tools or persisted CLI execution |
+| Claude Code (CC) | [references/claude-code.md](references/claude-code.md) — native background session or persisted CLI session |
+| OpenCode | [references/opencode.md](references/opencode.md) — session API or persisted CLI run |
+| DeepSeek Harness (DSH) | [references/dsh.md](references/dsh.md) — host session interface or SDK/headless profile |
+
+Prefer native session tools; otherwise use the host's documented SDK/API or CLI when available and allowed. A managed CLI run with its own persisted session is a valid continuation even without a new UI tab. Do not use a subagent or switch to another AI tool as a substitute. Check installed-version capabilities before using optional flags; never invent tool names or APIs.
+
+Choose the existing project and execution environment where the artifacts are accessible. Preserve the source's effective model, effort, agent/profile, and permission restrictions. Defaults are sufficient only when they match; carry forward known session overrides through supported options without changing global settings. Never guess unavailable values or choose a more permissive mode to make launch succeed. Do not invent branch names or create a worktree unless requested.
 
 Send a self-contained continuation prompt: read the handoff first, verify the current state and applicable instructions, then begin its next action within the inherited scope. Include the objective, document location, checkpoint, and authorization limits in the prompt so the new session can detect missing or stale material. Do not require another confirmation for already authorized work. If the document cannot be shared with the destination, resolve access before launching.
 
 Freeze source-side writes before creation. Record the returned conversation/operation identity and observe the existing continuation until its setup completes and there is evidence that it read the handoff and began the next action, or reached a concrete user-input/blocking boundary. Creation alone proves dispatch, not execution or completion. Once launched, the successor owns execution; the source only monitors or answers the user.
 
-On a timeout or ambiguous create result, reconcile through native status/list tools rather than creating another conversation. Reuse a continuation already created for this transfer. If creation definitively fails before launch, source ownership remains; report the blocker. If creation tools are unavailable, deliver the document and ready-to-send prompt, and state that automatic continuation is unavailable. Do not claim a completed transfer.
+For CLI launches, use the host's managed background/process facility and retain the process handle, private output location, and eventual session ID. A PID or process exit alone does not establish continuation start. Build argument arrays or safely quote arguments; never evaluate prompt contents as shell code. Do not use untracked shell backgrounding, permission-bypass flags, public session sharing, or configuration migrations. Leave active successors running in a facility that survives the source turn; if the host cannot provide that, do not launch an unsupervised writer.
+
+On a timeout or ambiguous create result, reconcile through native status/list tools or captured process/session output rather than creating another conversation. Reuse a continuation already created for this transfer. If creation definitively fails before launch, source ownership remains; report the blocker. If no permitted launch interface is available, deliver the document and ready-to-send prompt, and state that automatic continuation is unavailable. Do not claim a completed transfer.
 
 Report the checkpoint, handoff location, continuation identity, and observed start or blocker. Do not invoke this skill recursively in the successor just because it was used by the source.

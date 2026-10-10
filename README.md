@@ -2,7 +2,7 @@
 
 **English** · [简体中文](README.zh-CN.md)
 
-Reusable skills for coding agents, with a focus on reliable task continuity. Each skill can be installed independently. The current collection targets Codex, with native conversation support for Codex desktop.
+Reusable skills for coding agents, with a focus on reliable task continuity. Each skill can be installed independently. The same skill instructions support **Codex, Claude Code (CC), OpenCode, and DeepSeek Harness (DSH)**. Platform references provide the session-launching details.
 
 ## Available skills
 
@@ -12,13 +12,15 @@ Reusable skills for coding agents, with a focus on reliable task continuity. Eac
 
 ## Installation
 
-Install `handoff` globally for Codex with the [skills CLI](https://github.com/vercel-labs/skills):
+Install `handoff` globally for Codex, Claude Code, and OpenCode with the [skills CLI](https://github.com/vercel-labs/skills):
 
 ```sh
-npx skills@latest add LAwLi3tCoding/agent-skills --skill handoff --agent codex --global --yes
+npx skills@latest add LAwLi3tCoding/agent-skills --skill handoff --agent codex claude-code opencode --global --yes
 ```
 
-The skill is available in the next conversation turn after installation.
+DSH also discovers the shared `~/.agents/skills/handoff` directory created by this installation when its filesystem skill provider is enabled. If `DSH_AGENTS_HOME` is customized, use that configured root instead. A higher-priority copy of `handoff` can shadow the shared installation; update the active copy rather than keeping divergent versions. Installation does not change models, profiles, permissions, or hooks.
+
+Start a fresh turn or session if the host has not refreshed its skill catalog.
 
 To select skills and a supported agent interactively:
 
@@ -34,11 +36,13 @@ npx skills@latest update handoff --global --yes
 
 ## Usage
 
-Request a handoff and describe what the next conversation should focus on:
+Request a handoff and describe what the next conversation should focus on. In Codex:
 
 ```text
 $handoff Continue the remaining implementation in a new conversation, preserving the existing acceptance criteria.
 ```
+
+In Claude Code, use `/handoff` with the same task description. In OpenCode and DSH, ask the agent to load the `handoff` skill and continue the task in a fresh session; available UI shortcuts depend on the host.
 
 The request authorizes the continuation within the existing task scope. Pending approvals, read-only constraints, and other authorization boundaries carry forward.
 
@@ -53,9 +57,18 @@ A checkpoint may include documented uncommitted changes. The skill does not comm
 
 ## Runtime requirements
 
-Automatic continuation requires native tools for creating and inspecting conversations, plus successor access to the handoff and workspace. The [Codex desktop reference](skills/handoff/references/codex.md) describes the supported tool flow.
+All four hosts use the same checkpoint and ownership rules. Automatic continuation requires a permitted session interface, access to the handoff and workspace, and a way to preserve the source's effective configuration.
 
-In an environment without conversation-creation tools, the skill produces the handoff document and a ready-to-send continuation prompt. It explicitly reports that automatic continuation has not started. Installation in another agent does not imply native conversation support; this repository does not include dedicated adapters for other agents.
+| Host | Continuation interface | Reference |
+| --- | --- | --- |
+| Codex | Desktop conversation tools or a persisted `codex exec` session | [Codex](skills/handoff/references/codex.md) |
+| Claude Code (CC) | Native background session or a managed, persisted CLI session | [Claude Code](skills/handoff/references/claude-code.md) |
+| OpenCode | Session API or a managed `opencode run` session | [OpenCode](skills/handoff/references/opencode.md) |
+| DeepSeek Harness (DSH) | Host session interface, compatible headless profile, or existing SDK | [DSH](skills/handoff/references/dsh.md) |
+
+The skill checks installed capabilities before selecting a launch path. A managed CLI session is a separate persisted conversation; it need not open a new UI tab. CLI processes require a durable host supervisor. DSH profile changes require verified equivalent model, tools, and permissions. The skill never substitutes a subagent or bypasses approval gates.
+
+If no suitable launch interface is available, it produces the handoff document and a ready-to-send prompt, and reports that automatic continuation has not started. `agents/openai.yaml` supplies optional Codex UI metadata; other hosts use `SKILL.md` and its references directly.
 
 The handoff document stays outside the repository. The skill reports the checkpoint, destination conversation, and observed start or blocker. A successful transfer does not establish that the underlying task is complete.
 

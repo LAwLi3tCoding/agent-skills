@@ -2,7 +2,7 @@
 
 [English](README.md) · **简体中文**
 
-面向编程 Agent 的可复用技能，重点解决任务的可靠续接。每个技能都可独立安装。目前面向 Codex，并提供 Codex 桌面应用的原生会话续接流程。
+面向编程 Agent 的可复用技能，重点解决任务的可靠续接。每个技能都可独立安装。同一份技能指令支持 **Codex、Claude Code（CC）、OpenCode 和 DeepSeek Harness（DSH）**，各平台的会话启动方式通过独立参考文件说明。
 
 ## 可用技能
 
@@ -12,13 +12,15 @@
 
 ## 安装
 
-使用 [skills CLI](https://github.com/vercel-labs/skills)，为 Codex 全局安装 `handoff`：
+使用 [skills CLI](https://github.com/vercel-labs/skills)，为 Codex、Claude Code 和 OpenCode 全局安装 `handoff`：
 
 ```sh
-npx skills@latest add LAwLi3tCoding/agent-skills --skill handoff --agent codex --global --yes
+npx skills@latest add LAwLi3tCoding/agent-skills --skill handoff --agent codex claude-code opencode --global --yes
 ```
 
-安装后可在下一轮对话中使用。
+启用文件系统技能提供器的 DSH 也能发现该安装创建的共享目录 `~/.agents/skills/handoff`。如果设置了 `DSH_AGENTS_HOME`，应使用配置后的根目录。高优先级目录中的同名技能可能覆盖共享安装，应更新实际加载的副本，避免保留不同版本。安装不会修改模型、profile、权限或 hooks。
+
+如果宿主尚未刷新技能目录，可在新一轮或新会话中加载。
 
 如需交互选择技能和支持的 Agent：
 
@@ -34,11 +36,13 @@ npx skills@latest update handoff --global --yes
 
 ## 使用
 
-请求交接时，说明下一次会话需要关注的内容：
+请求交接时，说明下一次会话需要关注的内容。Codex 示例：
 
 ```text
 $handoff 在新会话中继续完成剩余实现，保留现有验收要求。
 ```
+
+Claude Code 中可使用 `/handoff` 并附上同样的任务说明。OpenCode 和 DSH 中可直接要求 Agent 加载 `handoff` 技能，并在新会话中继续任务；界面快捷入口以宿主实际提供的能力为准。
 
 该请求授权新会话在现有任务范围内继续执行。待审批事项、只读限制及其他授权边界会随交接保留。
 
@@ -53,9 +57,18 @@ $handoff 在新会话中继续完成剩余实现，保留现有验收要求。
 
 ## 运行条件
 
-自动续接需要宿主提供创建和检查会话的原生工具，接手会话也需要能够访问交接文档和工作区。具体工具流程见 [Codex 桌面应用参考](skills/handoff/references/codex.md)。
+四个平台共用相同的交接节点和执行权转移规则。自动续接需要可使用的会话接口、交接文档及工作区访问权限，以及保留原会话有效配置的能力。
 
-缺少会话创建工具时，技能会生成交接文档和可直接发送的续接提示词，并明确报告尚未自动启动续接。在其他 Agent 中安装技能，不代表该环境具备原生会话支持；本仓库未提供其他 Agent 的专用适配器。
+| 平台 | 续接方式 | 参考文件 |
+| --- | --- | --- |
+| Codex | 桌面应用会话工具，或持久化的 `codex exec` 会话 | [Codex](skills/handoff/references/codex.md) |
+| Claude Code（CC） | 原生后台会话，或受管理的持久化 CLI 会话 | [Claude Code](skills/handoff/references/claude-code.md) |
+| OpenCode | 会话 API，或受管理的 `opencode run` 会话 | [OpenCode](skills/handoff/references/opencode.md) |
+| DeepSeek Harness（DSH） | 宿主会话接口、配置兼容的 headless profile，或已有 SDK | [DSH](skills/handoff/references/dsh.md) |
+
+技能会先检查已安装版本的能力，再选择启动方式。受管理的 CLI 会话也是独立、持久化的新会话，不一定打开新界面标签页。CLI 进程需要能够持续运行的宿主管理机制。DSH 切换 profile 前，需要确认模型、工具和权限配置等价。技能不会用子 Agent 代替新会话，也不会绕过审批门禁。
+
+没有适用的启动接口时，技能会生成交接文档和可直接发送的续接提示词，并报告尚未自动启动。`agents/openai.yaml` 仅提供可选的 Codex 界面信息，其他宿主直接使用 `SKILL.md` 及其参考文件。
 
 交接文档不会进入代码仓库。技能会报告交接节点、目标会话，以及已观察到的启动结果或阻塞原因。交接成功不代表原任务已经完成。
 
